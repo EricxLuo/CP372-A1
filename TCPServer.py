@@ -9,17 +9,20 @@ def start_server():
     print("Server is listening...")
     ClientName = 0
     while True:
-        ClientName +=1    
+        ClientName +=1
 
-        client_socket, addr = server_socket.accept()
-        print(f"Client{ClientName:02d} Connection from {addr}")
+        if ClientName <= 3:
+            
+            client_socket, addr = server_socket.accept()
+            print(f"Client{ClientName:02d} Connection from {addr}")
 
-        data = client_socket.recv(1024).decode()
-        if data:
-            print(f"Received: {data}")
-            upcased_data = data.upper()
-            client_socket.send(upcased_data.encode())
+            data = client_socket.recv(1024).decode()
+            if data:
+                print(f"Received: {data}")
+                upcased_data = data.upper()
+                client_socket.send(upcased_data.encode())
 
+            client_socket.close()
         client_socket.close()
 
 if __name__ == '__main__':
