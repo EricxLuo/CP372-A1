@@ -7,17 +7,15 @@ client_cache = {}
 
 def handle_client(client_socket, client_id):
     connected_time = datetime.datetime.now()
-    client_cache[client_id] = {"NAME": None, "Connect": connected_time, "Disconnect": None}
+    client_cache[client_id] = {"Name": None, "Connect": connected_time, "Disconnect": None}
 
     try:
         while True:
-
             data = client_socket.recv(1024).decode()
-
             if not data:
                 break
 
-            if client_cache[client_id]["NAME"] is None:
+            if client_cache[client_id]["Name"] is None:
                 client_cache[client_id]["Name"] = data
                 print(f"Client {client_id} registered as {data}")
                 client_socket.send("Name registered".encode())
@@ -25,18 +23,21 @@ def handle_client(client_socket, client_id):
             elif data.lower() == 'status':
                 cache_info = "\n".join([
                     f"Client {cid}: Name={info['Name']}, Connect={info['Connect']}, Disconnect={info['Disconnect']}"
+                    
                     for cid, info in client_cache.items()
+
                 ])
                 client_socket.send(f"Server Cache:\n{cache_info}".encode())
 
             else:
-                print(f"Received: {data}")
-                upcased_data = data.upper()
-                client_socket.send(upcased_data.encode())
+                print(f"Received from {client_cache[client_id]['Name']}: {data}")
+                response = data + " ACK"
+                client_socket.send(response.encode())
 
                
 
     finally:
+        print(f"Client {client_cache[client_id]['Name']} disconnected")
         client_cache[client_id]["Disconnect"] = datetime.datetime.now()
         client_socket.close()
 
