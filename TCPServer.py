@@ -17,13 +17,14 @@ def handle_client(client_socket, client_id):
             data = client_socket.recv(1024).decode()
             if not data:
                 break
-
+            #Create a name for the client
             if client_cache[client_id]["Name"] is None:
                 client_cache[client_id]["Name"] = data
                 print(f"Client {client_id} registered as {data}")
                 client_socket.send("Name registered".encode())
                 continue
-
+            
+            #loops through each client and returns their name, and connect/disconnect times
             if data.lower() == 'status':
                 cache_info = "\n".join([
                     f"Client {cid}: Name={info['Name']}, Connect={info['Connect']}, Disconnect={info['Disconnect']}"
@@ -33,7 +34,6 @@ def handle_client(client_socket, client_id):
                 ])
                 client_socket.send(f"Server Cache:\n{cache_info}".encode())
 
-
             elif data.lower()  == "list":
                 files = os.listdir(DIR)
                 if files:
@@ -42,8 +42,7 @@ def handle_client(client_socket, client_id):
                 else:
 
                     client_socket.send("No files in repository.\n".encode())
-                    
-                
+                         
             elif data.lower() == "get":
                 send_all_files(client_socket)
 
@@ -52,13 +51,12 @@ def handle_client(client_socket, client_id):
                 response = data + " ACK"
                 client_socket.send(response.encode())
 
-               
-
     finally:
         print(f"Client {client_cache[client_id]['Name']} disconnected")
         client_cache[client_id]["Disconnect"] = datetime.datetime.now()
         client_socket.close()
 
+#Responsible for sending all files in repository folder to the client
 def send_all_files(client_socket):
     files = os.listdir(DIR)
     if not files:
@@ -70,17 +68,15 @@ def send_all_files(client_socket):
         if not os.path.isfile(file_path):
             continue  # skip directories
 
-        client_socket.send(f"START {filename}\n".encode())
+        client_socket.send(f"START {filename}\n".encode()) #Send a start signal for client to know when to start the recieving loop
 
         with open(file_path, 'rb') as f:
+            while fileChunk := f.read(1024): #Read file in chunks 
+                client_socket.send(fileChunk) #Then send the chunks to client
 
-            while fileChunk := f.read(1024):
-                client_socket.send(fileChunk)
-
-        client_socket.send(b"\nEND\n")
+        client_socket.send(b"\nEND\n") #Send an end signal for client to know when to stop recieving
     client_socket.send(b"ALL FILES SENT\n")
     print("FILES SENT")
-
 
 
 def start_server():
@@ -91,12 +87,12 @@ def start_server():
     ClientName = 0
     while True:
         ClientName += 1
-        if ClientName <= 3:
+        if ClientName <= 3: 
             
             client_socket, client_id = server_socket.accept()
             print(f"Client{ClientName:02d} Connection from {client_id}")
 
-            # Corrected thread creation
+           
             client_handler = threading.Thread(target=handle_client, args=(client_socket, client_id))
             client_handler.start()
 
