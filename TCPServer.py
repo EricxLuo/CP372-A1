@@ -3,9 +3,10 @@ import threading
 import datetime
 import os
 
-client_cache = {}
 
-DIR = "repository"
+DIR = "repository" # for putting the file names
+
+client_cache = {} #Use dictionary to store client information
 
 def handle_client(client_socket, client_id):
     connected_time = datetime.datetime.now()
@@ -15,8 +16,10 @@ def handle_client(client_socket, client_id):
     try:
         while True:
             data = client_socket.recv(1024).decode()
+
             if not data:
                 break
+
             #Create a name for the client
             if client_cache[client_id]["Name"] is None:
                 client_cache[client_id]["Name"] = data
@@ -35,14 +38,16 @@ def handle_client(client_socket, client_id):
                 client_socket.send(f"Server Cache:\n{cache_info}".encode())
 
             elif data.lower()  == "list":
-                files = os.listdir(DIR)
+                files = os.listdir(DIR) # get all files in the repository
+
                 if files:
                     file_list = "\n".join(files)
                     client_socket.send(f"Files in repository:\n{file_list}".encode())
-                else:
 
+                else:
                     client_socket.send("No files in repository.\n".encode())
                          
+            # Send all files to the client
             elif data.lower() == "get":
                 send_all_files(client_socket)
 
@@ -59,6 +64,7 @@ def handle_client(client_socket, client_id):
 #Responsible for sending all files in repository folder to the client
 def send_all_files(client_socket):
     files = os.listdir(DIR)
+
     if not files:
         client_socket.send(b"No files available.\n")
         return
@@ -71,8 +77,13 @@ def send_all_files(client_socket):
         client_socket.send(f"START {filename}\n".encode()) #Send a start signal for client to know when to start the recieving loop
 
         with open(file_path, 'rb') as f:
-            while fileChunk := f.read(1024): #Read file in chunks 
-                client_socket.send(fileChunk) #Then send the chunks to client
+            while True:
+                fileChunk = f.read(1024) # start to read the file first
+
+                if not fileChunk: # if the file is empty stop the looop
+                    break
+
+                client_socket.send(fileChunk)
 
         client_socket.send(b"\nEND\n") #Send an end signal for client to know when to stop recieving
     client_socket.send(b"ALL FILES SENT\n")
@@ -80,13 +91,18 @@ def send_all_files(client_socket):
 
 
 def start_server():
+
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind(('localhost', 12345))  
     server_socket.listen(1)
     print("Server is listening...")
+
     ClientName = 0
+
+    # use while loop to accpet maximum three clients 
     while True:
         ClientName += 1
+
         if ClientName <= 3: 
             
             client_socket, client_id = server_socket.accept()
